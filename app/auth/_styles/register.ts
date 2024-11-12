@@ -80,4 +80,23 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  inputContainer: {
+    width: "100%",
+    marginBottom: 15,
+  },
+  inputError: {
+    borderColor: "red",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
+  },
+  signInButtonDisabled: {
+    opacity: 0.7,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+  }
 });

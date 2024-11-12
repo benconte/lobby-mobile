@@ -6,9 +6,13 @@ import {
   Modal, 
   StyleSheet,
   TextInput,
-  FlatList 
+  FlatList,
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/themeContext';
+import { getTheme } from '@/constants/Colors';
 
 interface LocationSelectorProps {
   selectedLocation: string;
@@ -21,6 +25,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const { isDarkMode } = useTheme();
+  const activeTheme = getTheme(isDarkMode);
 
   const popularLocations = [
     'New York, NY',
@@ -39,16 +45,61 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
     location.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  const getThemedStyles = () => {
+    return {
+      selector: {
+        ...styles.selector,
+        borderColor: activeTheme.border,
+        // backgroundColor: activeTheme.card,
+      } as ViewStyle,
+      label: {
+        ...styles.label,
+        color: activeTheme.secondary,
+      } as TextStyle,
+      locationText: {
+        ...styles.locationText,
+        color: activeTheme.text,
+      } as TextStyle,
+      modalContent: {
+        ...styles.modalContent,
+        backgroundColor: activeTheme.background,
+      } as ViewStyle,
+      modalTitle: {
+        ...styles.modalTitle,
+        color: activeTheme.text,
+      } as TextStyle,
+      searchInput: {
+        ...styles.searchInput,
+        borderColor: activeTheme.border,
+        // backgroundColor: activeTheme.card,
+        color: activeTheme.text,
+      } as ViewStyle,
+      locationItem: {
+        ...styles.locationItem,
+        borderBottomColor: activeTheme.border,
+      } as ViewStyle,
+      locationItemText: {
+        color: activeTheme.text,
+      } as TextStyle,
+    };
+  };
+
+  const themedStyles = getThemedStyles();
+
   return (
     <View style={styles.container}>
       <TouchableOpacity 
-        style={styles.selector}
+        style={themedStyles.selector}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={styles.label}>Select location</Text>
+        <Text style={themedStyles.label}>Select location</Text>
         <View style={styles.selectedLocation}>
-          <Text style={styles.locationText}>{selectedLocation}</Text>
-          <Ionicons name="chevron-down" size={24} color="black" />
+          <Text style={themedStyles.locationText}>{selectedLocation}</Text>
+          <Ionicons 
+            name="chevron-down" 
+            size={24} 
+            color={activeTheme.text} 
+          />
         </View>
       </TouchableOpacity>
 
@@ -59,17 +110,22 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <View style={themedStyles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Location</Text>
+              <Text style={themedStyles.modalTitle}>Select Location</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color="black" />
+                <Ionicons 
+                  name="close" 
+                  size={24} 
+                  color={activeTheme.text} 
+                />
               </TouchableOpacity>
             </View>
 
             <TextInput
-              style={styles.searchInput}
+              style={themedStyles.searchInput}
               placeholder="Search locations..."
+              placeholderTextColor={activeTheme.secondary}
               value={searchText}
               onChangeText={setSearchText}
             />
@@ -79,13 +135,13 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={styles.locationItem}
+                  style={themedStyles.locationItem}
                   onPress={() => {
                     onLocationChange(item);
                     setModalVisible(false);
                   }}
                 >
-                  <Text>{item}</Text>
+                  <Text style={themedStyles.locationItemText}>{item}</Text>
                 </TouchableOpacity>
               )}
             />
@@ -96,20 +152,16 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   );
 };
 
-export default LocationSelector;
-
 const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
   selector: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 10,
     padding: 5,
   },
   label: {
-    color: '#666',
     fontSize: 14,
   },
   selectedLocation: {
@@ -128,7 +180,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -146,7 +197,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 10,
     padding: 10,
     marginBottom: 20,
@@ -154,6 +204,7 @@ const styles = StyleSheet.create({
   locationItem: {
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
 });
+
+export default LocationSelector;

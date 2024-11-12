@@ -38,3 +38,6 @@ export const Colors = {
     purple: '#5B59E2', // will be used for prices
   },
 };
+
+export const getTheme = (isDark: boolean) => 
+  isDark ? Colors.dark : Colors.light;

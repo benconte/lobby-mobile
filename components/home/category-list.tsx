@@ -1,59 +1,130 @@
-import React from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { 
+  ScrollView, 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity,
+  ViewStyle,
+  TextStyle,
+} from 'react-native';
+import { useTheme } from '@/context/themeContext';
+import { getTheme } from '@/constants/Colors';
 
-const categories = ['All', 'Guest House', 'B&B', 'Hotel', 'Motel'];
+interface Category {
+  id: string;
+  name: string;
+}
 
-const CategoryList = () => {
+const categories: Category[] = [
+  { id: 'all', name: 'All' },
+  { id: 'guesthouse', name: 'Guest House' },
+  { id: 'bnb', name: 'B&B' },
+  { id: 'hotel', name: 'Hotel' },
+  { id: 'motel', name: 'Motel' },
+];
+
+interface CategoryListProps {
+  onCategorySelect?: (category: Category) => void;
+}
+
+const CategoryList: React.FC<CategoryListProps> = ({ onCategorySelect }) => {
+  const [activeCategory, setActiveCategory] = useState(categories[0].id);
+  const { isDarkMode } = useTheme();
+  const activeTheme = getTheme(isDarkMode);
+
+  const handleCategoryPress = (category: Category) => {
+    setActiveCategory(category.id);
+    onCategorySelect?.(category);
+  };
+
+  const getThemedStyles = () => {
+    return {
+      container: {
+        ...styles.container,
+        backgroundColor: activeTheme.background,
+      } as ViewStyle,
+      categoryItem: {
+        ...styles.categoryItem,
+        // backgroundColor: activeTheme.card,
+      } as ViewStyle,
+      activeCategory: {
+        backgroundColor: activeTheme.primary,
+      } as ViewStyle,
+      categoryText: {
+        ...styles.categoryText,
+        color: activeTheme.secondary,
+      } as TextStyle,
+      activeCategoryText: {
+        color: '#FFFFFF',
+      } as TextStyle,
+    };
+  };
+
+  const themedStyles = getThemedStyles();
+
   return (
     <ScrollView 
       horizontal 
       showsHorizontalScrollIndicator={false}
-      style={styles.container}
+      style={themedStyles.container}
+      contentContainerStyle={styles.contentContainer}
     >
-      {categories.map((category, index) => (
-        <View 
-          key={index} 
-          style={[
-            styles.categoryItem,
-            index === 0 && styles.activeCategory,
-          ]}
+      {categories.map((category) => (
+        <TouchableOpacity 
+          key={category.id}
+          activeOpacity={0.7}
+          onPress={() => handleCategoryPress(category)}
         >
-          <Text 
+          <View 
             style={[
-              styles.categoryText,
-              index === 0 && styles.activeCategoryText,
+              themedStyles.categoryItem,
+              activeCategory === category.id && themedStyles.activeCategory,
+              styles.categoryItemContainer,
             ]}
           >
-            {category}
-          </Text>
-        </View>
+            <Text 
+              style={[
+                themedStyles.categoryText,
+                activeCategory === category.id && themedStyles.activeCategoryText,
+              ]}
+            >
+              {category.name}
+            </Text>
+          </View>
+        </TouchableOpacity>
       ))}
     </ScrollView>
   );
 };
 
-export default CategoryList;
-
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    paddingRight: 30
+  },
+  contentContainer: {
+    paddingRight: 10,
+  },
+  categoryItemContainer: {
+    marginRight: 10,
   },
   categoryItem: {
     paddingHorizontal: 20,
     paddingVertical: 8,
-    marginRight: 10,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-  },
-  activeCategory: {
-    backgroundColor: 'red',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   categoryText: {
-    color: '#666',
     fontSize: 16,
-  },
-  activeCategoryText: {
-    color: 'white',
+    fontWeight: '500',
   },
 });
+
+export default CategoryList;
