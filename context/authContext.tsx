@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useStorageState } from "../hooks/useStorageState";
-import { APICONSTANTS } from "@/constants/api";
-import axios from "axios";
+import { api } from '@/lib/api';
 import { User } from "@/types/users";
+import axios from "axios";
 
 interface AuthContextType {
   signIn: (token: string) => void;
@@ -56,56 +56,68 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  
-  const { API_URL } = APICONSTANTS;
 
-  const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  // Add interceptor to handle auth token
-  api.interceptors.request.use((config) => {
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-    return config;
-  });
-
-  const fetchCurrentUser = async (token: string) => {
+  const fetchCurrentUser = async () => {
     try {
-      const response = await api.get('/users/currentUser');
-      setUser(response.data);
-      setIsAuthenticated(true);
-      return response.data;
-    } catch (error) {
-      setAccessToken(null);
-      setUser(null);
-      setIsAuthenticated(false);
+      // const response = await api.get('/users/currentUser');
+      const response = await axios.get('http://192.168.1.65:8080/api/users/currentUser', {
+        headers: {
+          Authorization: "Bearer " + accessToken
+        }
+      })
+
+      console.log("response users", response.data.user);
+      
+      if (response.data.user) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+        return response.data.user;
+      } else {
+        throw new Error('User data not found in response');
+      }
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        // signOut();
+      } else {
+        setError('Failed to fetch user data. Please try again.');
+      }
       throw error;
     }
   };
 
   useEffect(() => {
+    let isMounted = true;
+    console.log(isLoading)
+
+    if (isLoading) return;
+
+    console.log(accessToken)
     if (accessToken) {
-      fetchCurrentUser(accessToken).catch((error) => {
-        console.error('Error fetching current user:', error);
-        setError('Session expired. Please login again.');
+      console.log('Token found, fetching user data...');
+      fetchCurrentUser().catch((error) => {
+        if (isMounted) {
+          console.log('Error in useEffect:', error);
+        }
       });
     } else {
+      console.log('No token found, clearing user state');
       setUser(null);
       setIsAuthenticated(false);
     }
-  }, [accessToken]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [accessToken, isLoading]);
 
   const signIn = (token: string) => {
+    console.log('Signing in with token');
     setError(null);
     setAccessToken(token);
   };
 
   const signOut = () => {
+    console.log('Signing out');
     setAccessToken(null);
     setUser(null);
     setIsAuthenticated(false);
@@ -114,46 +126,68 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
 
   const signUp = async (credentials: SignUpCredentials) => {
     try {
+      console.log('Attempting signup...');
       setError(null);
       const response = await api.post('/auth/signup', credentials);
+      
       const { token, user } = response.data;
+      if (!token || !user) {
+        throw new Error('Invalid response format');
+      }
+      
       setUser(user);
       signIn(token);
     } catch (error: any) {
-      setError(error.response?.data?.error || 'Signup failed. Please try again.');
+      const errorMessage = 
+        error.response?.data?.error || 
+        error.message || 
+        'Signup failed. Please try again.';
+      setError(errorMessage);
       throw error;
     }
   };
 
   const login = async (credentials: LoginCredentials) => {
     try {
+      console.log('Attempting login for:', credentials.email);
       setError(null);
       const response = await api.post('/auth/login', credentials);
+      
       const { token, user } = response.data;
+      if (!token || !user) {
+        throw new Error('Invalid response format');
+      }
+
       setUser(user);
       signIn(token);
     } catch (error: any) {
-      setError(error.response?.data?.error || 'Login failed. Please try again.');
+      const errorMessage = 
+        error.response?.data?.error || 
+        error.message || 
+        'Login failed. Please try again.';
+      setError(errorMessage);
       throw error;
     }
   };
 
+  const contextValue = {
+    signIn,
+    signOut,
+    signUp,
+    login,
+    accessToken,
+    isLoading,
+    isAuthenticated,
+    user,
+    setUser,
+    error,
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        signIn,
-        signOut,
-        signUp,
-        login,
-        accessToken,
-        isLoading,
-        isAuthenticated,
-        user,
-        setUser,
-        error,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 }
+
+export type { AuthContextType, SignUpCredentials, LoginCredentials };

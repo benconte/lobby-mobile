@@ -112,7 +112,7 @@ const Register = () => {
         email: email.trim(),
         password,
       });
-      router.push("/(app)/(tabs)/");
+      // router.push("/(app)/(tabs)/");
     } catch (error) {
       Alert.alert(
         "Registration Failed",

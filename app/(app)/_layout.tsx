@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Stack,
   Redirect,
@@ -11,47 +11,89 @@ import { View, ActivityIndicator } from "react-native";
 import { ThemeProvider } from "@/context/themeContext";
 
 const RootLayout = () => {
-  const { accessToken, isLoading } = useAuth();
+  const { accessToken, isLoading, isAuthenticated } = useAuth();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
 
-  // Prevent navigation from happening before we check auth state
-  // if (!navigationState?.key || isLoading) {
-  //   return (
-  //     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-  //       <ActivityIndicator size="large" color={Colors.light.primary} />
-  //     </View>
-  //   );
-  // }
+  useEffect(() => {
+    if (!isLoading) {
+      console.log('Auth state:', { 
+        accessToken, 
+        isAuthenticated, 
+        currentSegment: segments[0] 
+      });
+    }
+  }, [isLoading, accessToken, isAuthenticated, segments]);
 
-  // // Check if we're in an auth group
-  // const isAuthGroup = segments[0] === 'auth';
+  // Show loading screen while checking auth state and navigation is initializing
+  if (!navigationState?.key || isLoading) {
+    return (
+      <View style={{ 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        backgroundColor: Colors.light.background 
+      }}>
+        <ActivityIndicator size="large" color={Colors.light.primary} />
+      </View>
+    );
+  }
 
-  // if (!accessToken && !isAuthGroup) {
-  //   // Redirect to the login page if we're not in the auth group
-  //   return <Redirect href="/auth/login" />;
-  // }
+  // Get the current segment to determine if we're in an auth group
+  const isAuthGroup = segments[0] === 'auth';
 
-  // if (accessToken && isAuthGroup) {
-  //   // Redirect to home if we're logged in and trying to access auth pages
-  //   return <Redirect href="/(app)/(tabs)" />;
-  // }
+  // Authentication flow logic
+  if (!isAuthenticated && !isAuthGroup) {
+    console.log('Not authenticated, redirecting to login');
+    return <Redirect href="/auth/login" />;
+  }
+
+  if (isAuthenticated && isAuthGroup) {
+    console.log('Already authenticated, redirecting to home');
+    return <Redirect href="/(app)/(tabs)/" />;
+  }
 
   return (
     <ThemeProvider>
       <Stack
         screenOptions={{
           headerShown: false,
+          animation: 'slide_from_right',
+          contentStyle: { backgroundColor: Colors.light.background },
         }}
       >
+        {/* Protected Routes */}
         <Stack.Screen
           name="(app)"
           options={{
             headerShown: false,
           }}
         />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="hotel-details/[id]" />
+
+        {/* Auth Routes */}
+        <Stack.Screen 
+          name="auth" 
+          options={{ 
+            headerShown: false,
+            // Prevent going back to auth screens when logged in
+            gestureEnabled: !isAuthenticated 
+          }} 
+        />
+
+        {/* Other Routes */}
+        <Stack.Screen 
+          name="hotel-details/[id]"
+          options={{
+            headerShown: true,
+            headerTitle: "Hotel Details",
+            headerBackTitle: "Back",
+            headerTintColor: Colors.light.primary,
+            headerStyle: {
+              backgroundColor: "white",
+            },
+            headerShadowVisible: false,
+          }}
+        />
         <Stack.Screen
           name="checkout/[id]"
           options={{
@@ -63,8 +105,16 @@ const RootLayout = () => {
               backgroundColor: "white",
             },
             headerShadowVisible: false,
-            animation: "slide_from_right",
           }}
+        />
+
+        {/* Error Screen */}
+        <Stack.Screen 
+          name="[...missing]" 
+          options={{ 
+            title: 'Not Found',
+            headerShown: true 
+          }} 
         />
       </Stack>
     </ThemeProvider>

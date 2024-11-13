@@ -15,12 +15,13 @@ import {
   ViewStyle,
   TextStyle,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { styles } from "./_styles/login";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/authContext";
+import axios, { AxiosError } from "axios";
 
 // Define the shape of our errors object
 interface FormErrors {
@@ -81,7 +82,7 @@ const Login = () => {
     if (!validateForm()) {
       return;
     }
-
+    
     try {
       setIsSubmitting(true);
       await login({
@@ -90,6 +91,9 @@ const Login = () => {
       });
       router.push("/(app)/(tabs)/");
     } catch (error) {
+      // if (error instanceof AxiosError) {
+      //   console.log(error.response?.data)
+      // }
       Alert.alert(
         "Login Failed",
         authError || "Something went wrong. Please try again."
